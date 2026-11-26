@@ -13,52 +13,156 @@ enum UserRole {
   ADMIN
 }
 
+enum PoolStatus {
+  OPEN
+  EXTENDED
+  CONFIRMED
+  DISPATCHED
+  COMPLETED
+  CANCELLED
+}
+
+enum SubOrderStatus {
+  PLEDGED
+  LOCKED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
 model Kitchen {
-  id            String    @id @default(uuid())
+  id            String      @id @default(uuid())
   name          String
   ownerName     String
-  email         String    @unique
-  phone         String    @unique
+  email         String      @unique
+  phone         String      @unique
   passwordHash  String
-  role          UserRole  @default(KITCHEN_OWNER)
+  role          UserRole    @default(KITCHEN_OWNER)
   address       String
   locality      String
   latitude      Float
   longitude     Float
   expoPushToken String?
-  isVerified    Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isVerified    Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  createdPools  OrderPool[] @relation("PoolCreator")
+  subOrders     SubOrder[]
 }
 
 model Wholesaler {
-  id           String      @id @default(uuid())
-  businessName String
-  contactName  String
-  email        String      @unique
-  phone        String      @unique
-  mandiAddress String
-  latitude     Float
-  longitude    Float
-  rating       Float       @default(4.5)
-  createdAt    DateTime    @default(now())
-  commodities  Commodity[]
+  id              String           @id @default(uuid())
+  businessName    String
+  contactName     String
+  email           String           @unique
+  phone           String           @unique
+  mandiAddress    String
+  latitude        Float
+  longitude       Float
+  rating          Float            @default(4.5)
+  createdAt       DateTime         @default(now())
+  commodities     Commodity[]
+  consolidatedPOs ConsolidatedPO[]
 }
 
 model Commodity {
-  id              String     @id @default(uuid())
+  id              String         @id @default(uuid())
   wholesalerId    String
-  wholesaler      Wholesaler @relation(fields: [wholesalerId], references: [id], onDelete: Cascade)
+  wholesaler      Wholesaler     @relation(fields: [wholesalerId], references: [id], onDelete: Cascade)
   name            String
   category        String
-  unit            String     @default("kg")
+  unit            String         @default("kg")
   retailPrice     Float
   baseMoqWeight   Float
   maxPoolCapacity Float
   imageUrl        String?
-  isActive        Boolean    @default(true)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  tiers           DiscountTier[]
+  pools           OrderPool[]
 
   @@index([category, isActive])
+}
+
+model DiscountTier {
+  id          String    @id @default(uuid())
+  commodityId String
+  commodity   Commodity @relation(fields: [commodityId], references: [id], onDelete: Cascade)
+  tierName    String
+  minWeight   Float
+  unitPrice   Float
+
+  @@unique([commodityId, minWeight])
+  @@index([commodityId, minWeight])
+}
+
+model OrderPool {
+  id               String          @id @default(uuid())
+  commodityId      String
+  commodity        Commodity       @relation(fields: [commodityId], references: [id])
+  createdById      String
+  createdBy        Kitchen         @relation("PoolCreator", fields: [createdById], references: [id])
+  hubLocality      String
+  centerLatitude   Float
+  centerLongitude  Float
+  radiusMeters     Int             @default(3000)
+  currentWeight    Float           @default(0)
+  moqWeight        Float
+  maxCapacity      Float
+  currentUnitPrice Float
+  status           PoolStatus      @default(OPEN)
+  cutoffAt         DateTime
+  extendedOnce     Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  subOrders        SubOrder[]
+  consolidatedPO   ConsolidatedPO?
+
+  @@index([status, cutoffAt])
+  @@index([commodityId, status])
+}
+
+model SubOrder {
+  id              String         @id @default(uuid())
+  poolId          String
+  pool            OrderPool      @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  kitchenId       String
+  kitchen         Kitchen        @relation(fields: [kitchenId], references: [id])
+  idempotencyKey  String         @unique
+  quantityWeight  Float
+  unitPriceLocked Float?
+  totalAmount     Float?
+  savingsAmount   Float?
+  deliveryQrCode  String         @unique @default(uuid())
+  status          SubOrderStatus @default(PLEDGED)
+  deliveredAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([poolId, status])
+  @@index([kitchenId, createdAt])
+}
+
+model ConsolidatedPO {
+  id             String     @id @default(uuid())
+  poolId         String     @unique
+  pool           OrderPool  @relation(fields: [poolId], references: [id])
+  wholesalerId   String
+  wholesaler     Wholesaler @relation(fields: [wholesalerId], references: [id])
+  poNumber       String     @unique
+  totalWeight    Float
+  finalUnitPrice Float
+  totalCost      Float
+  routeWaypoints Json?
+  dispatchedAt   DateTime?
+  createdAt      DateTime   @default(now())
+}
+
+model IdempotencyRecord {
+  key            String   @id
+  endpoint       String
+  responseStatus Int
+  responseBody   Json
+  createdAt      DateTime @default(now())
 }
