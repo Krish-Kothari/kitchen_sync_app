@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const config = require('./config/env');
+const authRoutes = require('./routes/auth.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,10 +22,13 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+app.use('/api/auth', authRoutes);
+
 app.use((err, _req, res, _next) => {
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     error: err.message || 'Internal Server Error',
+    ...(err.details && { details: err.details }),
     ...(config.nodeEnv !== 'production' && { stack: err.stack }),
   });
 });
