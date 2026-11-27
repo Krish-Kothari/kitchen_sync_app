@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const config = require('./config/env');
 const authRoutes = require('./routes/auth.routes');
+const kitchenRoutes = require('./routes/kitchen.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +24,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/kitchens', kitchenRoutes);
 
 app.use((err, _req, res, _next) => {
   const statusCode = err.statusCode || 500;
