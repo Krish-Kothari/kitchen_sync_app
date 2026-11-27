@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "CloudPool",
+    "slug": "cloud-pool",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CloudPool uses your kitchen location to discover wholesale order pools within 3 km.",
+        "NSCameraUsageDescription": "CloudPool uses the camera to scan delivery QR codes and confirm received weight."
+      }
+    },
+    "android": {
+      "package": "com.cloudpool.kitchenapp",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow CloudPool to locate nearby wholesale pools within 3 km."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow CloudPool to scan wholesale delivery QR codes."
+        }
+      ]
+    ]
+  }
+}
