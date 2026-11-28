@@ -7,6 +7,7 @@ const config = require('./config/env');
 const authRoutes = require('./routes/auth.routes');
 const kitchenRoutes = require('./routes/kitchen.routes');
 const catalogRoutes = require('./routes/catalog.routes');
+const poolRoutes = require('./routes/pool.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +28,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/kitchens', kitchenRoutes);
 app.use('/api/catalog', catalogRoutes);
+app.use('/api/pools', poolRoutes);
 
 app.use((err, _req, res, _next) => {
   const statusCode = err.statusCode || 500;
